@@ -1,6 +1,7 @@
 import sys
 import os
 import joblib
+import tempfile
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -31,19 +32,15 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Employee Performance Analysis")
         self.setGeometry(300, 200, 1000, 700)
 
-        # Stacked widget for switching between upload and model widgets
         self.stacked_widget = QStackedWidget()
         self.setCentralWidget(self.stacked_widget)
 
-        # Upload and model widgets
         self.upload_widget = self.create_upload_widget()
         self.model_widget = self.create_model_widget()
 
-        # Add widgets to the stack
         self.stacked_widget.addWidget(self.upload_widget)
         self.stacked_widget.addWidget(self.model_widget)
 
-        # Variables
         self.file_path = ""
         self.data = None
         self.X_train, self.X_test, self.y_train, self.y_test = None, None, None, None
@@ -67,7 +64,6 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        # Buttons for models
         button_layout = QHBoxLayout()
 
         self.buttons = {
@@ -88,29 +84,23 @@ class MainWindow(QMainWindow):
             btn.clicked.connect(lambda _, m=model_name: self.run_model(m))
             button_layout.addWidget(btn)
 
-        # Result display
         self.result_display = QTextEdit(self)
         self.result_display.setReadOnly(True)
 
-        # Download button (initially hidden)
         self.download_button = QPushButton("Download ANN Model")
         self.download_button.setEnabled(False)
         self.download_button.clicked.connect(self.download_model)
-        self.download_button.hide()  # Hide initially
+        self.download_button.hide()
 
-        # Add the result display first
         layout.addWidget(self.result_display)
 
-        # Store the download button separately to add it later
         self.download_button = QPushButton("Download ANN Model")
         self.download_button.setEnabled(False)
         self.download_button.clicked.connect(self.download_model)
-        self.download_button.hide()  # Initially hidden
+        self.download_button.hide()
 
-        # Layout arrangement
         layout.addLayout(button_layout)
         layout.addWidget(self.result_display)
-        # Finally, add the download button at the bottom
         layout.addWidget(self.download_button)
 
         return widget
@@ -125,32 +115,26 @@ class MainWindow(QMainWindow):
             self.file_path = file_name
             self.label.setText(f"File uploaded: {file_name}")
             self.preprocess_data()
-            self.stacked_widget.setCurrentIndex(1)  # Switch to model widget
+            self.stacked_widget.setCurrentIndex(1)
         else:
             QMessageBox.warning(self, "No File", "Please select an XLS file!")
 
     def preprocess_data(self):
         """Preprocess the uploaded XLS data"""
         try:
-            # Load data
             self.data = pd.read_excel(self.file_path)
 
-            # Encode categorical columns
             enc = LabelEncoder()
             for col in (2, 3, 4, 5, 6, 7, 16, 26):
                 self.data.iloc[:, col] = enc.fit_transform(self.data.iloc[:, col])
 
-            # Drop unnecessary columns
             self.data.drop(['EmpNumber'], inplace=True, axis=1)
 
-            # Select features and target
             y = self.data['PerformanceRating']
             X = self.data.iloc[:, [4, 5, 9, 16, 20, 21, 22, 23, 24]]
 
-            # Split into train and test sets
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=10)
 
-            # Standardization
             sc = StandardScaler()
             self.X_train = sc.fit_transform(X_train)
             self.X_test = sc.transform(X_test)
@@ -176,7 +160,6 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            # Select the appropriate model
             models = {
                 "logistic": LogisticRegression(),
                 "svm": SVC(kernel='rbf', C=100, random_state=10),
@@ -190,7 +173,6 @@ class MainWindow(QMainWindow):
 
             model = models[model_name]
 
-            # Normalize labels for XGBoost
             if model_name == "xgb":
                 le = LabelEncoder()
                 y_train_encoded = le.fit_transform(self.y_train)
@@ -199,17 +181,17 @@ class MainWindow(QMainWindow):
                 y_train_encoded = self.y_train
                 y_test_encoded = self.y_test
 
-            # Train and predict
             model.fit(self.X_train, y_train_encoded)
             y_pred = model.predict(self.X_test)
 
             if model_name == "ann":
-                self.model_path = "INX_Future_Inc_ANN.ml"
-                joblib.dump(model, self.model_path)
-                self.download_button.show()  # Show the download button
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".ml") as tmp:
+                    joblib.dump(model, tmp.name)
+                    self.model_path = tmp.name
+                self.download_button.show()
                 self.download_button.setEnabled(True)
             else:
-                self.download_button.hide()  # Hide the button for other models
+                self.download_button.hide()
 
             accuracy = accuracy_score(y_test_encoded, y_pred)
             report = classification_report(y_test_encoded, y_pred, zero_division=0)
