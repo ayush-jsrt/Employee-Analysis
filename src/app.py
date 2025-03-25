@@ -23,6 +23,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from xgboost import XGBClassifier
 from sklearn.neural_network import MLPClassifier
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtGui import QIcon, QPixmap, QPainter, QFont
 
 
 class MainWindow(QMainWindow):
@@ -30,6 +31,18 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Employee Performance Analysis")
+        size = 64
+        pixmap = QPixmap(size, size)
+        pixmap.fill(Qt.transparent)
+
+        painter = QPainter(pixmap)
+        font = QFont("Segoe UI Emoji", size // 2)
+        painter.setFont(font)
+        painter.drawText(pixmap.rect(), Qt.AlignCenter, "📊")
+        painter.end()
+
+        self.setWindowIcon(QIcon(pixmap))
+
         self.setGeometry(300, 200, 1000, 700)
 
         self.stacked_widget = QStackedWidget()
@@ -49,11 +62,20 @@ class MainWindow(QMainWindow):
         """Widget for uploading XLS file"""
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setAlignment(Qt.AlignCenter)
 
+        self.upload_icon = QLabel("🔍", self)
+        self.upload_icon.setAlignment(Qt.AlignCenter)
+        self.upload_icon.setFixedSize(500, 300)
+        self.upload_icon.setStyleSheet("font-size: 200px;")
         self.label = QLabel("", self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setStyleSheet("padding: 20px 0;")
         self.button = QPushButton("Upload XLS File")
+        self.button.setStyleSheet("font-size: 20px; padding: 20px 100px;")
         self.button.clicked.connect(self.upload_file)
 
+        layout.addWidget(self.upload_icon)
         layout.addWidget(self.button)
         layout.addWidget(self.label)
 
@@ -63,8 +85,10 @@ class MainWindow(QMainWindow):
         """Widget with model buttons and result display"""
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setAlignment(Qt.AlignCenter)
 
         button_layout = QHBoxLayout()
+        button_layout.setAlignment(Qt.AlignTop)
 
         self.buttons = {
             "Graph: Department-Wise": "dept_graph",
@@ -85,23 +109,38 @@ class MainWindow(QMainWindow):
             button_layout.addWidget(btn)
 
         self.result_display = QTextEdit(self)
+        self.result_display.setAlignment(Qt.AlignCenter)
+        self.result_display.setFixedSize(500, 500)
+        self.result_display.setStyleSheet("font-size: 20px; margin-bottom: 20px;")
         self.result_display.setReadOnly(True)
 
-        self.download_button = QPushButton("Download ANN Model")
-        self.download_button.setEnabled(False)
-        self.download_button.clicked.connect(self.download_model)
-        self.download_button.hide()
-
-        layout.addWidget(self.result_display)
+        result_display_layout = QHBoxLayout()
+        result_display_layout.addWidget(self.result_display)
 
         self.download_button = QPushButton("Download ANN Model")
+        download_button_layout = QHBoxLayout()
+        download_button_layout.setAlignment(Qt.AlignCenter)
+        download_button_layout.addWidget(self.download_button)
+
+        self.download_button.setFixedSize(200, 100)
+        self.download_button.setStyleSheet("""
+            QPushButton {
+                color: #000000;
+                border-radius: 10px;
+                border: 2px solid #000000;
+                font: bold 14px;
+                margin-top: 10px;
+            }
+        """)
         self.download_button.setEnabled(False)
         self.download_button.clicked.connect(self.download_model)
         self.download_button.hide()
 
         layout.addLayout(button_layout)
-        layout.addWidget(self.result_display)
-        layout.addWidget(self.download_button)
+        layout.addLayout(result_display_layout)
+        layout.addLayout(download_button_layout)
+        layout.setAlignment(Qt.AlignHCenter)
+        # button_layout.setAlignment(Qt.AlignHCenter)
 
         return widget
 
@@ -248,7 +287,6 @@ class MainWindow(QMainWindow):
                 QMessageBox.information(self, "Download Complete", f"Model saved at: {save_path}")
             else:
                 QMessageBox.warning(self, "Cancelled", "Download cancelled.")
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
