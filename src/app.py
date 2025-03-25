@@ -162,6 +162,7 @@ class MainWindow(QMainWindow):
         """Preprocess the uploaded XLS data"""
         try:
             self.data = pd.read_excel(self.file_path)
+            self.perf_graph_data = self.data.iloc[:,[5,27]].copy()
 
             enc = LabelEncoder()
             for col in (2, 3, 4, 5, 6, 7, 16, 26):
@@ -251,12 +252,15 @@ class MainWindow(QMainWindow):
         """Display department-wise performance graph"""
         dialog = QDialog(self)
         dialog.setWindowTitle("Department-Wise Performance")
-        dialog.setGeometry(200, 200, 800, 600)
+        dialog.setGeometry(200, 200, 1100, 600)
 
         layout = QVBoxLayout(dialog)
 
+        dept = self.perf_graph_data
+        dept_per = dept.copy()
+
         fig, ax = plt.subplots(figsize=(10, 6))
-        sns.barplot(x='EmpDepartment', y='PerformanceRating', data=self.data, ax=ax)
+        sns.barplot(x='EmpDepartment', y='PerformanceRating', data=dept_per, ax=ax)
 
         canvas = FigureCanvas(fig)
         layout.addWidget(canvas)
@@ -266,12 +270,14 @@ class MainWindow(QMainWindow):
         """Display feature correlation matrix"""
         dialog = QDialog(self)
         dialog.setWindowTitle("Correlation Matrix")
-        dialog.setGeometry(200, 200, 800, 600)
+        dialog.setGeometry(200, 200, 1400, 800)
 
         layout = QVBoxLayout(dialog)
-
+        sns.set(font_scale=0.8)
         fig, ax = plt.subplots(figsize=(10, 8))
         sns.heatmap(self.data.corr(numeric_only=True), annot=True, cmap="coolwarm", ax=ax)
+
+        fig.tight_layout()
 
         canvas = FigureCanvas(fig)
         layout.addWidget(canvas)
