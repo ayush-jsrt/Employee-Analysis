@@ -106,6 +106,16 @@ class MainWindow(QMainWindow):
         for label, model_name in self.buttons.items():
             btn = QPushButton(label)
             btn.clicked.connect(lambda _, m=model_name: self.run_model(m))
+            btn.setFixedHeight(50)
+            btn.setStyleSheet("""
+                QPushButton {
+                    color: #666666;
+                    border-radius: 10px;
+                    border: 2px solid #000000;
+                    font: bold 14px;
+                    padding: 10px 20px;
+                }
+            """)
             button_layout.addWidget(btn)
 
         self.result_display = QTextEdit(self)
